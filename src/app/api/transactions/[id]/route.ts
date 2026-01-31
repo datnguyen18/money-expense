@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, getFamilyUserIds } from "@/lib/prisma";
 
 export async function PUT(
   req: Request,
@@ -16,7 +16,10 @@ export async function PUT(
     const body = await req.json();
     const { amount, description, date, type, categoryId } = body;
 
-    // Check if transaction belongs to user
+    // Get family members
+    const familyUserIds = await getFamilyUserIds(session.user.id);
+
+    // Check if transaction belongs to user or family member
     const existingTransaction = await prisma.transaction.findUnique({
       where: { id },
     });
@@ -28,7 +31,8 @@ export async function PUT(
       );
     }
 
-    if (existingTransaction.userId !== session.user.id) {
+    // Allow edit if transaction belongs to current user or family member
+    if (!familyUserIds.includes(existingTransaction.userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -68,7 +72,10 @@ export async function DELETE(
 
     const { id } = params;
 
-    // Check if transaction belongs to user
+    // Get family members
+    const familyUserIds = await getFamilyUserIds(session.user.id);
+
+    // Check if transaction belongs to user or family member
     const existingTransaction = await prisma.transaction.findUnique({
       where: { id },
     });
@@ -80,7 +87,8 @@ export async function DELETE(
       );
     }
 
-    if (existingTransaction.userId !== session.user.id) {
+    // Allow delete if transaction belongs to current user or family member
+    if (!familyUserIds.includes(existingTransaction.userId)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
