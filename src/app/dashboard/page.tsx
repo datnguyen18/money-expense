@@ -18,7 +18,7 @@ import { vi } from "date-fns/locale";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { categories, transactions, refreshCategories, refreshTransactions } =
+  const { transactions, refreshCategories, refreshTransactions } =
     useApp();
   const [isLoading, setIsLoading] = useState(true);
 

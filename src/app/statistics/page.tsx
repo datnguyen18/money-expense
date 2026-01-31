@@ -61,6 +61,7 @@ export default function StatisticsPage() {
     if (session?.user) {
       fetchStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, year, month]);
 
   const fetchStats = async () => {

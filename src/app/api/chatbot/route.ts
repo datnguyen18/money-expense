@@ -78,8 +78,7 @@ Quy tắc:
 
 // Fallback: Simple rule-based parser (when AI is not available)
 function parseWithRules(
-  message: string,
-  _categories: Array<{ name: string; type: string }>
+  message: string
 ): ParsedTransaction | null {
   const lowerMessage = message.toLowerCase();
 
@@ -189,7 +188,7 @@ export async function POST(req: Request) {
     }
 
     if (!parsed) {
-      parsed = parseWithRules(message, categories);
+      parsed = parseWithRules(message);
     }
 
     if (!parsed) {

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { useApp } from "@/contexts/AppContext";
-import { Plus, Edit2, Trash2, X, Filter } from "lucide-react";
+import { Plus, Edit2, Trash2, X } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Transaction } from "@/types";
