@@ -16,6 +16,8 @@ export default function TransactionsPage() {
   const { categories, transactions, refreshCategories, refreshTransactions } =
     useApp();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] =
     useState<Transaction | null>(null);
@@ -75,6 +77,7 @@ export default function TransactionsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
 
     try {
       const url = editingTransaction
@@ -97,11 +100,14 @@ export default function TransactionsPage() {
     } catch (error) {
       console.error("Error saving transaction:", error);
       alert("Có lỗi xảy ra");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (transaction: Transaction) => {
     if (!confirm("Bạn có chắc muốn xóa giao dịch này?")) return;
+    setDeletingId(transaction.id);
 
     try {
       const res = await fetch(`/api/transactions/${transaction.id}`, {
@@ -117,6 +123,8 @@ export default function TransactionsPage() {
     } catch (error) {
       console.error("Error deleting transaction:", error);
       alert("Có lỗi xảy ra");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -271,15 +279,21 @@ export default function TransactionsPage() {
                         <div className="flex gap-1 flex-shrink-0">
                           <button
                             onClick={() => openModal(transaction)}
-                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            disabled={deletingId === transaction.id}
+                            className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
                           >
                             <Edit2 size={18} />
                           </button>
                           <button
                             onClick={() => handleDelete(transaction)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            disabled={deletingId === transaction.id}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                           >
-                            <Trash2 size={18} />
+                            {deletingId === transaction.id ? (
+                              <div className="w-[18px] h-[18px] border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 size={18} />
+                            )}
                           </button>
                         </div>
                       </div>
@@ -465,15 +479,20 @@ export default function TransactionsPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {editingTransaction ? "Cập nhật" : "Thêm mới"}
+                  {isSaving && (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {isSaving ? "Đang lưu..." : editingTransaction ? "Cập nhật" : "Thêm mới"}
                 </button>
               </div>
             </form>

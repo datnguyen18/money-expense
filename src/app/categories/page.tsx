@@ -28,6 +28,8 @@ export default function CategoriesPage() {
   const router = useRouter();
   const { categories, refreshCategories } = useApp();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
@@ -77,6 +79,7 @@ export default function CategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
     try {
       const url = editingCategory
@@ -99,11 +102,14 @@ export default function CategoriesPage() {
     } catch (error) {
       console.error("Error saving category:", error);
       alert("Có lỗi xảy ra");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const handleDelete = async (category: Category) => {
     if (!confirm(`Bạn có chắc muốn xóa danh mục "${category.name}"?`)) return;
+    setDeletingId(category.id);
 
     try {
       const res = await fetch(`/api/categories/${category.id}`, {
@@ -119,6 +125,8 @@ export default function CategoriesPage() {
     } catch (error) {
       console.error("Error deleting category:", error);
       alert("Có lỗi xảy ra");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -183,15 +191,21 @@ export default function CategoriesPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => openModal(category)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          disabled={deletingId === category.id}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(category)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={deletingId === category.id}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                         >
-                          <Trash2 size={16} />
+                          {deletingId === category.id ? (
+                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </div>
                     )}
@@ -230,15 +244,21 @@ export default function CategoriesPage() {
                       <div className="flex gap-1">
                         <button
                           onClick={() => openModal(category)}
-                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          disabled={deletingId === category.id}
+                          className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(category)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          disabled={deletingId === category.id}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                         >
-                          <Trash2 size={16} />
+                          {deletingId === category.id ? (
+                            <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </div>
                     )}
@@ -399,15 +419,20 @@ export default function CategoriesPage() {
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {editingCategory ? "Cập nhật" : "Thêm mới"}
+                  {isSaving && (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {isSaving ? "Đang lưu..." : editingCategory ? "Cập nhật" : "Thêm mới"}
                 </button>
               </div>
             </form>
