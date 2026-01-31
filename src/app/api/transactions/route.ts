@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, getFamilyUserIds } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -10,6 +10,9 @@ export async function GET(req: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    // Get all family member IDs for shared data
+    const familyUserIds = await getFamilyUserIds(session.user.id);
 
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month");
@@ -38,11 +41,14 @@ export async function GET(req: Request) {
 
     const transactions = await prisma.transaction.findMany({
       where: {
-        userId: session.user.id,
+        userId: { in: familyUserIds }, // Query all family members' transactions
         ...dateFilter,
       },
       include: {
         category: true,
+        user: {
+          select: { name: true, image: true }, // Include who created the transaction
+        },
       },
       orderBy: {
         date: "desc",

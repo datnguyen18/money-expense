@@ -13,6 +13,7 @@ import {
   X,
   LogOut,
   FolderOpen,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/categories", label: "Danh mục", icon: FolderOpen },
   { href: "/statistics", label: "Thống kê", icon: BarChart3 },
   { href: "/chatbot", label: "Trợ lý AI", icon: MessageCircle },
+  { href: "/settings", label: "Cài đặt", icon: Settings },
 ];
 
 export function Sidebar() {

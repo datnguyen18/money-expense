@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { prisma, getFamilyUserIds } from "@/lib/prisma";
 import { DEFAULT_CATEGORIES } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +12,15 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get all categories (default + user's custom)
+    // Get all family member IDs for shared data
+    const familyUserIds = await getFamilyUserIds(session.user.id);
+
+    // Get all categories (default + family's custom)
     let categories = await prisma.category.findMany({
       where: {
         OR: [
           { isDefault: true, userId: null },
-          { userId: session.user.id },
+          { userId: { in: familyUserIds } }, // Include all family members' categories
         ],
       },
       orderBy: [{ isDefault: "desc" }, { name: "asc" }],
@@ -36,7 +39,7 @@ export async function GET() {
         where: {
           OR: [
             { isDefault: true, userId: null },
-            { userId: session.user.id },
+            { userId: { in: familyUserIds } },
           ],
         },
         orderBy: [{ isDefault: "desc" }, { name: "asc" }],

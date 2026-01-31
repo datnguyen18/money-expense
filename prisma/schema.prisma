@@ -44,6 +44,7 @@ model User {
   email         String?       @unique
   emailVerified DateTime?
   image         String?
+  familyId      String?       // Users with same familyId share data
   accounts      Account[]
   sessions      Session[]
   categories    Category[]
