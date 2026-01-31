@@ -134,6 +134,26 @@ export default function TransactionsPage() {
       currency: "VND",
     }).format(amount);
 
+  // Format number with dots as thousand separators
+  const formatNumberWithDots = (value: string) => {
+    const number = value.replace(/\D/g, "");
+    return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  // Parse formatted number back to raw number
+  const parseFormattedNumber = (value: string) => {
+    return value.replace(/\./g, "");
+  };
+
+  // Handle amount input change
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = parseFormattedNumber(e.target.value);
+    setFormData({ ...formData, amount: rawValue });
+  };
+
+  // Get display value for amount input
+  const displayAmount = formData.amount ? formatNumberWithDots(formData.amount) : "";
+
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -399,11 +419,10 @@ export default function TransactionsPage() {
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    value={formData.amount}
-                    onChange={(e) =>
-                      setFormData({ ...formData, amount: e.target.value })
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={displayAmount}
+                    onChange={handleAmountChange}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg text-gray-900 bg-white"
                     placeholder="0"
                     required

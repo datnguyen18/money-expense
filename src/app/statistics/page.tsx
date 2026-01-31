@@ -6,7 +6,18 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  TrendingUp, 
+  TrendingDown,
+  Sparkles,
+  Lightbulb,
+  AlertTriangle,
+  RefreshCw,
+  Target,
+  PiggyBank,
+} from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -44,6 +55,20 @@ interface StatisticsData {
   transactionCount: number;
 }
 
+interface PredictionData {
+  predictedIncome: number;
+  predictedExpense: number;
+  predictedBalance: number;
+  confidence: number;
+  trend: "up" | "down" | "stable";
+  summary: string;
+  tips: string[];
+  warnings: string[];
+  topSpendingCategory: string;
+  savingPotential: number;
+  monthName: string;
+}
+
 export default function StatisticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -52,6 +77,12 @@ export default function StatisticsPage() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState<number | null>(null);
   const [viewType, setViewType] = useState<"expense" | "income">("expense");
+  
+  // Prediction states
+  const [prediction, setPrediction] = useState<PredictionData | null>(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [predictionError, setPredictionError] = useState<string | null>(null);
+  const [showPrediction, setShowPrediction] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -82,6 +113,30 @@ export default function StatisticsPage() {
       console.error("Error fetching stats:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPrediction = async () => {
+    setIsPredicting(true);
+    setPredictionError(null);
+    setShowPrediction(true);
+    
+    try {
+      const res = await fetch("/api/statistics/predict");
+      const data = await res.json();
+      
+      if (data.error) {
+        setPredictionError(data.error);
+      } else if (data.message) {
+        setPredictionError(data.message);
+      } else {
+        setPrediction(data.prediction);
+      }
+    } catch (error) {
+      console.error("Error fetching prediction:", error);
+      setPredictionError("Không thể tải dự đoán. Vui lòng thử lại.");
+    } finally {
+      setIsPredicting(false);
     }
   };
 
@@ -137,14 +192,174 @@ export default function StatisticsPage() {
       <main className="lg:ml-64 pt-16 lg:pt-0">
         <div className="p-4 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">
-              Thống kê
-            </h1>
-            <p className="text-gray-500 mt-1">
-              Phân tích chi tiêu và thu nhập
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">
+                Thống kê
+              </h1>
+              <p className="text-gray-500 mt-1">
+                Phân tích chi tiêu và thu nhập
+              </p>
+            </div>
+            <button
+              onClick={fetchPrediction}
+              disabled={isPredicting}
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg font-medium disabled:opacity-70"
+            >
+              {isPredicting ? (
+                <RefreshCw size={18} className="animate-spin" />
+              ) : (
+                <Sparkles size={18} />
+              )}
+              {isPredicting ? "Đang phân tích..." : "🔮 Dự đoán tháng tới"}
+            </button>
           </div>
+
+          {/* AI Prediction Section */}
+          {showPrediction && (
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-sm border border-purple-100 p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                  <Sparkles className="text-purple-500" size={20} />
+                  Dự đoán AI cho {prediction?.monthName || "tháng tới"}
+                </h2>
+                <button
+                  onClick={() => setShowPrediction(false)}
+                  className="text-gray-400 hover:text-gray-600 text-sm"
+                >
+                  Ẩn
+                </button>
+              </div>
+
+              {isPredicting ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-purple-200 rounded-full animate-pulse"></div>
+                    <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-purple-500 animate-bounce" size={24} />
+                  </div>
+                  <p className="text-gray-600 mt-4">AI đang phân tích thói quen chi tiêu của bạn...</p>
+                </div>
+              ) : predictionError ? (
+                <div className="text-center py-6">
+                  <AlertTriangle className="mx-auto text-amber-500 mb-3" size={32} />
+                  <p className="text-gray-600">{predictionError}</p>
+                  <button
+                    onClick={fetchPrediction}
+                    className="mt-4 text-purple-600 font-medium hover:text-purple-700"
+                  >
+                    Thử lại
+                  </button>
+                </div>
+              ) : prediction ? (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="bg-white/60 rounded-xl p-4">
+                    <p className="text-gray-700">{prediction.summary}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-gray-500">Độ tin cậy:</span>
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full max-w-[150px]">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full"
+                          style={{ width: `${prediction.confidence}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-medium text-purple-600">{prediction.confidence}%</span>
+                    </div>
+                  </div>
+
+                  {/* Prediction Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white/80 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="text-green-500" size={18} />
+                        <span className="text-sm text-gray-600">Dự đoán thu nhập</span>
+                      </div>
+                      <p className="text-xl font-bold text-green-600">
+                        {formatMoney(prediction.predictedIncome)}
+                      </p>
+                    </div>
+
+                    <div className="bg-white/80 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingDown className="text-red-500" size={18} />
+                        <span className="text-sm text-gray-600">Dự đoán chi tiêu</span>
+                        {prediction.trend === "up" && (
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">↑ Tăng</span>
+                        )}
+                        {prediction.trend === "down" && (
+                          <span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded-full">↓ Giảm</span>
+                        )}
+                      </div>
+                      <p className="text-xl font-bold text-red-600">
+                        {formatMoney(prediction.predictedExpense)}
+                      </p>
+                    </div>
+
+                    <div className="bg-white/80 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="text-indigo-500" size={18} />
+                        <span className="text-sm text-gray-600">Dự đoán số dư</span>
+                      </div>
+                      <p className={`text-xl font-bold ${prediction.predictedBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+                        {formatMoney(prediction.predictedBalance)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Warnings */}
+                  {prediction.warnings.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="text-amber-500" size={18} />
+                        <span className="font-medium text-amber-700">Cảnh báo</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {prediction.warnings.map((warning, i) => (
+                          <li key={i} className="text-amber-700 text-sm flex items-start gap-2">
+                            <span className="mt-1">•</span>
+                            <span>{warning}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Tips */}
+                  {prediction.tips.length > 0 && (
+                    <div className="bg-white/60 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Lightbulb className="text-yellow-500" size={18} />
+                        <span className="font-medium text-gray-700">Lời khuyên từ AI</span>
+                      </div>
+                      <ul className="space-y-2">
+                        {prediction.tips.map((tip, i) => (
+                          <li key={i} className="text-gray-600 text-sm flex items-start gap-2">
+                            <span className="text-purple-500 font-bold">{i + 1}.</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Saving Potential */}
+                  {prediction.savingPotential > 0 && (
+                    <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-4">
+                      <div className="p-3 bg-green-100 rounded-xl">
+                        <PiggyBank className="text-green-600" size={24} />
+                      </div>
+                      <div>
+                        <p className="text-sm text-green-700">Tiềm năng tiết kiệm thêm</p>
+                        <p className="text-xl font-bold text-green-600">
+                          {formatMoney(prediction.savingPotential)}/tháng
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
 
           {/* Year/Month Selector */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6">

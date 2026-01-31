@@ -11,6 +11,8 @@ import {
   Wallet,
   ArrowUpRight,
   ArrowDownRight,
+  Check,
+  Sparkles,
 } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -18,9 +20,18 @@ import { vi } from "date-fns/locale";
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { transactions, refreshCategories, refreshTransactions } =
+  const { categories, transactions, refreshCategories, refreshTransactions } =
     useApp();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    amount: "",
+    description: "",
+    date: format(new Date(), "yyyy-MM-dd"),
+    type: "expense" as "expense" | "income",
+    categoryId: "",
+  });
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -35,6 +46,86 @@ export default function DashboardPage() {
       );
     }
   }, [session, refreshCategories, refreshTransactions]);
+
+  // Set default category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !formData.categoryId) {
+      const defaultCategory = categories.find((c) => c.type === formData.type);
+      if (defaultCategory) {
+        setFormData((prev) => ({ ...prev, categoryId: defaultCategory.id }));
+      }
+    }
+  }, [categories, formData.type, formData.categoryId]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.amount || !formData.categoryId) return;
+    
+    setIsSaving(true);
+
+    try {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (res.ok) {
+        await refreshTransactions();
+        // Reset form
+        const defaultCategory = categories.find((c) => c.type === "expense");
+        setFormData({
+          amount: "",
+          description: "",
+          date: format(new Date(), "yyyy-MM-dd"),
+          type: "expense",
+          categoryId: defaultCategory?.id || "",
+        });
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
+      } else {
+        const error = await res.json();
+        alert(error.error || "Có lỗi xảy ra");
+      }
+    } catch (error) {
+      console.error("Error saving transaction:", error);
+      alert("Có lỗi xảy ra");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleTypeChange = (newType: "expense" | "income") => {
+    const newCategory = categories.find((c) => c.type === newType);
+    setFormData({
+      ...formData,
+      type: newType,
+      categoryId: newCategory?.id || "",
+    });
+  };
+
+  // Format number with dots as thousand separators
+  const formatNumberWithDots = (value: string) => {
+    // Remove all non-digit characters
+    const number = value.replace(/\D/g, "");
+    // Format with dots
+    return number.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  };
+
+  // Parse formatted number back to raw number
+  const parseFormattedNumber = (value: string) => {
+    return value.replace(/\./g, "");
+  };
+
+  // Handle amount input change
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = parseFormattedNumber(e.target.value);
+    setFormData({ ...formData, amount: rawValue });
+  };
+
+  // Get display value for amount input
+  const displayAmount = formData.amount ? formatNumberWithDots(formData.amount) : "";
 
   if (status === "loading" || isLoading) {
     return (
@@ -73,6 +164,7 @@ export default function DashboardPage() {
     }).format(amount);
 
   const recentTransactions = transactions.slice(0, 5);
+  const filteredCategories = categories.filter((c) => c.type === formData.type);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -81,7 +173,7 @@ export default function DashboardPage() {
       <main className="lg:ml-64 pt-16 lg:pt-0">
         <div className="p-4 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">
               Xin chào, {session.user.name?.split(" ")[0]}! 👋
             </h1>
@@ -91,8 +183,144 @@ export default function DashboardPage() {
             </p>
           </div>
 
+          {/* Quick Add Transaction Form */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800">
+                ✨ Thêm giao dịch nhanh
+              </h2>
+              <button
+                type="button"
+                onClick={() => router.push("/chatbot")}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl hover:from-purple-600 hover:to-indigo-600 transition-all shadow-md hover:shadow-lg text-sm font-medium"
+              >
+                <Sparkles size={18} />
+                Nhập bằng AI
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Type Selection */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange("expense")}
+                  className={`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
+                    formData.type === "expense"
+                      ? "border-red-500 bg-red-50 text-red-600"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  💸 Chi tiêu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTypeChange("income")}
+                  className={`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all flex items-center justify-center gap-2 ${
+                    formData.type === "income"
+                      ? "border-green-500 bg-green-50 text-green-600"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  💰 Thu nhập
+                </button>
+              </div>
+
+              {/* Amount & Date Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={displayAmount}
+                    onChange={handleAmountChange}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-lg text-gray-900 bg-white"
+                    placeholder="Số tiền"
+                    required
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                    VNĐ
+                  </span>
+                </div>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, date: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                  required
+                />
+              </div>
+
+              {/* Categories */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Danh mục
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {filteredCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() =>
+                        setFormData({ ...formData, categoryId: category.id })
+                      }
+                      className={`px-3 py-2 rounded-xl border-2 transition-all flex items-center gap-2 ${
+                        formData.categoryId === category.id
+                          ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                          : "border-gray-200 hover:border-gray-300 text-gray-700"
+                      }`}
+                    >
+                      <span>{category.icon}</span>
+                      <span className="text-sm font-medium">{category.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <input
+                type="text"
+                value={formData.description}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-gray-900 bg-white"
+                placeholder="Ghi chú (tùy chọn)"
+              />
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSaving || !formData.amount || !formData.categoryId}
+                className={`w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                  showSuccess
+                    ? "bg-green-500 text-white"
+                    : "bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                }`}
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : showSuccess ? (
+                  <>
+                    <Check size={20} />
+                    Đã thêm thành công!
+                  </>
+                ) : (
+                  <>
+                    Thêm giao dịch
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 mb-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-green-100 rounded-xl">
@@ -171,12 +399,9 @@ export default function DashboardPage() {
               <div className="p-8 text-center">
                 <div className="text-4xl mb-3">📝</div>
                 <p className="text-gray-500">Chưa có giao dịch nào</p>
-                <button
-                  onClick={() => router.push("/transactions")}
-                  className="mt-4 text-indigo-600 font-medium hover:text-indigo-700"
-                >
-                  Thêm giao dịch đầu tiên
-                </button>
+                <p className="text-gray-400 text-sm mt-1">
+                  Sử dụng form phía trên để thêm giao dịch đầu tiên
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
