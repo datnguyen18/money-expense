@@ -79,7 +79,7 @@ Quy tắc:
 // Fallback: Simple rule-based parser (when AI is not available)
 function parseWithRules(
   message: string,
-  categories: Array<{ name: string; type: string }>
+  _categories: Array<{ name: string; type: string }>
 ): ParsedTransaction | null {
   const lowerMessage = message.toLowerCase();
 
@@ -95,7 +95,7 @@ function parseWithRules(
   for (const pattern of amountPatterns) {
     const match = message.match(pattern);
     if (match) {
-      let num = match[1].replace(/[.,]/g, "");
+      const num = match[1].replace(/[.,]/g, "");
       amount = parseFloat(num);
       if (/tr|triệu|m/i.test(match[0])) {
         amount *= 1000000;
@@ -134,7 +134,7 @@ function parseWithRules(
   let maxMatches = 0;
 
   for (const [categoryName, keywords] of Object.entries(categoryKeywords)) {
-    let matches = keywords.filter((k) => lowerMessage.includes(k)).length;
+    const matches = keywords.filter((k) => lowerMessage.includes(k)).length;
     if (matches > maxMatches) {
       maxMatches = matches;
       matchedCategory = categoryName;
@@ -142,7 +142,7 @@ function parseWithRules(
   }
 
   // Parse date
-  let date = new Date();
+  const date = new Date();
   if (lowerMessage.includes("hôm qua")) {
     date.setDate(date.getDate() - 1);
   } else if (lowerMessage.includes("hôm kia")) {

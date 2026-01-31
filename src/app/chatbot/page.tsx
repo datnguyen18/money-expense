@@ -61,6 +61,7 @@ Mình sẽ tự động phân loại và ghi nhận vào danh mục phù hợp!`
         },
       ]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
