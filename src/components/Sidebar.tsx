@@ -8,7 +8,6 @@ import {
   Home,
   PlusCircle,
   BarChart3,
-  Settings,
   MessageCircle,
   Menu,
   X,
@@ -80,6 +79,7 @@ export function Sidebar() {
           <div className="p-4 border-b border-gray-100">
             <div className="flex items-center gap-3">
               {session.user.image && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={session.user.image}
                   alt={session.user.name || "User"}
