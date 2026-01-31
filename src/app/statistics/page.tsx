@@ -257,8 +257,8 @@ export default function StatisticsPage() {
                       tickFormatter={formatMoneyShort}
                     />
                     <Tooltip
-                      formatter={(value: number) => formatMoney(value)}
-                      labelFormatter={(label) => `Tháng ${label.replace("T", "")}`}
+                      formatter={(value) => formatMoney(value as number)}
+                      labelFormatter={(label) => `Tháng ${String(label).replace("T", "")}`}
                     />
                     <Legend />
                     <Bar
@@ -326,16 +326,17 @@ export default function StatisticsPage() {
                         cx="50%"
                         cy="50%"
                         outerRadius={100}
-                        label={({ categoryIcon, percentage }) =>
-                          `${categoryIcon} ${percentage.toFixed(1)}%`
-                        }
+                        label={(props) => {
+                          const entry = props.payload as { categoryIcon: string; percentage: number };
+                          return `${entry.categoryIcon} ${entry.percentage.toFixed(1)}%`;
+                        }}
                       >
                         {filteredCategoryStats.map((entry, index) => (
                           <Cell key={index} fill={entry.categoryColor} />
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => formatMoney(value)}
+                        formatter={(value) => formatMoney(value as number)}
                       />
                     </PieChart>
                   </ResponsiveContainer>
