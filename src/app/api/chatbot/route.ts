@@ -150,9 +150,24 @@ function parseWithRules(
     date.setDate(date.getDate() - 2);
   }
 
+  // Clean up description - remove amount, common filler words
+  let description = message
+    .replace(/\d+(?:[.,]\d{3})*\s*(?:k|K|tr|triệu|nghìn|ngàn|đ|đồng|vnd|d)?/gi, "") // Remove amounts
+    .replace(/^(mình|tôi|em|anh|chị|t|mk|m)\s+/gi, "") // Remove leading pronouns
+    .replace(/\s+(mình|tôi|em|anh|chị)\s+/gi, " ") // Remove pronouns in middle
+    .replace(/\s+(hôm nay|hôm qua|hôm kia|sáng nay|tối nay|trưa nay)/gi, "") // Remove time words
+    .replace(/\s+(vừa|mới|đã|rồi|xong|được|bị|cho|về|ra|vào)/gi, " ") // Remove filler verbs
+    .replace(/\s+/g, " ") // Normalize spaces
+    .trim();
+
+  // If description is empty or too short, use category name
+  if (!description || description.length < 2) {
+    description = matchedCategory;
+  }
+
   return {
     amount,
-    description: message.replace(/\d+\s*(?:k|tr|triệu|nghìn|đ|đồng)?/gi, "").trim() || matchedCategory,
+    description,
     categoryName: matchedCategory,
     type,
     date: date.toISOString().split("T")[0],
