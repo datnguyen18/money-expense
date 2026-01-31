@@ -20,6 +20,32 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Fix input text color on mobile */
+input[type="number"],
+input[type="date"],
+input[type="text"],
+input[type="email"] {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827;
+  opacity: 1;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #111827;
+  -webkit-text-fill-color: #111827;
+}
+
+input::placeholder {
+  color: #9ca3af !important;
+  -webkit-text-fill-color: #9ca3af;
+  opacity: 1;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
